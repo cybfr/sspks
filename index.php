@@ -14,9 +14,6 @@ package_update_channel = stable
 
 $spkDir = "packages/";  // This has to be a directory relative to
                         // where this  script is and served by Apache
-$synologyModels = "conf/synology_models.conf";  // File where Syno models are
-                                                // stored in "DS412+=cedarview"
-                                                // type format
 $excludedSynoServices = array("apache-sys","apache-web","mdns","samba","db","applenetwork","cron","nfs","firewall");
 $host = $_SERVER['HTTP_HOST'].substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "/"))."/";
 
@@ -44,51 +41,12 @@ if(isset($_REQUEST['ds_sn'])){
 }
 elseif($_SERVER['REQUEST_METHOD'] == 'GET')
 {
-    $arch = trim($_GET['arch']);
-    $channel = trim($_GET['channel']);
-    $fullList = trim($_GET['fulllist']);
     $packagesAvailable = array();
-
-    echo "<!DOCTYPE html>\n";
-    echo "<html>\n";
-    echo "\t<head>\n";
-    echo "\t\t<title>".$siteName."</title>\n";
-    echo "\t\t<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\" />\n";
-    echo "\t\t<script src=\"data/js/lib/prototype.js\" type=\"text/javascript\"></script>\n";
-    echo "\t\t<script src=\"data/js/src/scriptaculous.js\" type=\"text/javascript\"></script>\n";
-    echo "\t\t<link rel=\"stylesheet\" href=\"data/css/style.css\" type=\"text/css\" />\n";
-    echo "\t\t<link rel=\"stylesheet\" href=\"data/css/style_mobile.css\" type=\"text/css\" media=\"handheld\"/>\n";
-    echo "\t</head>\n";
-    echo "\t<body>\n";
-    echo "\t\t<h1>".$siteName."</h1>\n";
-    echo "\t\t<div id=\"menu\">\n";
-    echo "\t\t\t<ul>\n";
-    echo "\t\t\t\t<li><a href=\".\">Synology Models</a></li>\n";
-    echo ($arch && !$channel)?"\t\t\t\t<li><a href=\"".$_SERVER['REQUEST_URI']."&channel=beta\">Show Beta Packages</a></li>\n":"";
-    echo $channel?"\t\t\t\t<li><a href=\"index.php?arch=".$arch."\">Hide Beta Packages</a></li>\n":"";
-    echo !$fullList?"\t\t\t\t<li><a href=\"index.php?fulllist=true\">Full Packages List</a></li>\n":"";
-    echo "\t\t\t\t<li class=\"last\"><a href=\"http://github.com/jdel/sspks\">Host your own packages</a></li>\n";
-    echo "\t\t\t</ul>\n";
-    echo "\t\t</div>\n";
-    echo "\t\t<div id=\"source-info\">\n";
-    echo "\t\t\t<p>Add <span>http://".$host."</span> to your Synology NAS Package Center sources !</p>\n";
-    echo "\t\t</div>\n";
-    echo "\t\t<div id=\"content\">\n";
-    echo "\t\t\t<ul>\n";
-    if ($arch){
-        DisplayPackagesHTML(GetPackageList($arch, $channel, "skip"));
-    } elseif ($fullList) {
-        DisplayAllPackages($spkDir);
-    } else {
-        DisplaySynoModels($synologyModels);
-    }
-    echo "\t\t\t</ul>\n";
-    echo "\t\t</div>\n";
-    echo "\t\t<hr />\n";
-    echo "\t\t<div id=\"footer\">\n";
-    echo "\t\t\t<p>Help this website get better on <a href=\"http://github.com/jdel/sspks\">Github</a></p>\n";
-    echo "\t\t</div>\n";
-    echo "\t</body>\n";
+    docHeader($siteName);
+    echo "  <body>";
+    pageHeader($siteName);
+    pageContent();
+    echo "</body>";
     echo "</html>";
 }
 else
@@ -251,5 +209,68 @@ function GetDirectoryList ($directory, $filter){
     closedir($handler);
     sort($results);
     return $results;
+}
+function docHeader($title){
+?>
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><?=$title?></title>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <script src="data/js/lib/prototype.js" type="text/javascript"></script>
+    <script src="data/js/src/scriptaculous.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="data/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="data/css/style_mobile.css" type="text/css" media="handheld"/>
+  </head>
+<?php
+}
+function pageHeader($title){
+    global $host;
+    $arch = (isset($_GET['arch'])) ? trim($_GET['arch']) : false;
+    $channel = (isset($_GET['channel'])) ? trim($_GET['channel']) : false ;
+    $fullList = (isset($_GET['fulllist'])) ?trim($_GET['fulllist']) : false;
+?>
+    <h1><?=$title?></h1>
+    <div id="menu">
+      <ul>
+        <li><a href=".">Synology Models</a></li> 
+<?php
+    echo ($arch && !$channel)?"\t\t\t\t<li><a href=\"".$_SERVER['REQUEST_URI']."&channel=beta\">Show Beta Packages</a></li>\n":"";
+    echo $channel?"\t\t\t\t<li><a href=\"index.php?arch=".$arch."\">Hide Beta Packages</a></li>\n":"";
+    echo !$fullList?"\t\t\t\t<li><a href=\"index.php?fulllist=true\">Full Packages List</a></li>\n":"";
+?>
+    <li class="last"><a href="http://github.com/jdel/sspks">Host your own packages</a></li>
+  </ul>
+</div>
+<div id="source-info">
+<p>Add <span>http://<?=$host?></span> to your Synology NAS Package Center sources !</p>
+</div>
+<?php
+}
+function pageContent(){
+    $synologyModels = "conf/synology_models.conf";  // File where Syno models are
+                                                // stored in "DS412+=cedarview"
+                                                // type format
+    $arch = (isset($_GET['arch'])) ? trim($_GET['arch']) : false;
+    $channel = (isset($_GET['channel'])) ? trim($_GET['channel']) : false ;
+    $fullList = (isset($_GET['fulllist'])) ?trim($_GET['fulllist']) : false;
+?>
+<div id="content">
+<ul>
+<?php
+
+    if ($arch){
+        DisplayPackagesHTML(GetPackageList($arch, $channel, "skip"));
+    } elseif ($fullList) {
+        DisplayAllPackages($spkDir);
+    } else {
+        DisplaySynoModels($synologyModels);
+    }
+    echo "\t\t\t</ul>\n";
+    echo "\t\t</div>\n";
+    echo "\t\t<hr />\n";
+    echo "\t\t<div id=\"footer\">\n";
+    echo "\t\t\t<p>Help this website get better on <a href=\"http://github.com/jdel/sspks\">Github</a></p>\n";
+    echo "\t\t</div>\n";
 }
 ?>
